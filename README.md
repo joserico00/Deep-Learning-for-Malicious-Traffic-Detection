@@ -25,3 +25,20 @@ This project uses only Zeek logs from the IoT 23 dataset by Stratosphere Laborat
 - Open the notebook in Colab or locally and set the path to your IoT 23 Zeek logs.  
 - Run the cells top to bottom.  
 - Review metrics and confusion matrices to pick the model and operating point that fit your needs.
+
+## Earlier experiments
+
+[`earlier-experiments/`](earlier-experiments/) keeps the iterations that came before the main notebook, when the project was built on the **CICIoT2023** dataset in Google Colab. They train the same four model families (ANN, CNN with `Conv1D`, LSTM, and a small Transformer with `MultiHeadAttention`) using TensorFlow/Keras and scikit-learn preprocessing.
+
+| File | What it is |
+|---|---|
+| `SIngle_dataset_Proyecto.ipynb` | Models trained on a single CSV file from the dataset (20 epochs, 60% sample) |
+| `Proyecto Merged dataset.ipynb` | Models trained on several dataset CSVs merged together (10 epochs, 50% sample) |
+| `Proyectocimplete epoch 10.ipynb` | A near-identical saved run of the merged-dataset notebook |
+| `Proyecto_colab_version.ipynb`, `smalldeeplearnign.ipynb` | Shorter Colab versions with longer training (50 epochs) |
+| `network_traffic_classification.ipynb` / `.py` | A separate dense neural network classifier for IoT-23 traffic, with saved preprocessing (joblib). The `.py` file is the Colab export of the notebook. |
+| `merge_csv_datasets.py` | Merges every CSV file in a folder into one dataset file |
+| `ann_model.png`, `cnn_model.png`, `lstm_model.png`, `transformer_model.png` | Model architecture diagrams |
+| `confusion matrix.png`, `confusionarray.png`, `validation accuracy.png` | Result plots from these runs |
+
+The notebooks read data from a Google Drive folder, and the datasets aren't included. Download CICIoT2023 from the [Canadian Institute for Cybersecurity](https://www.unb.ca/cic/datasets/iotdataset-2023.html) and update `dataset_dir` before running.
