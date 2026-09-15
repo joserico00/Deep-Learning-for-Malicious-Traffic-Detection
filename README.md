@@ -1,44 +1,73 @@
-## Description
+# Deep Learning for Malicious Traffic Detection
 
-This notebook trains and compares deep learning models to detect malicious network traffic using IoT 23 Zeek logs only. It loads Zeek tables such as `conn.log`, cleans and samples the data for Colab, encodes labels, applies standard scaling, splits into train, validation, and test sets, and then trains four neural models. ANN. CNN. LSTM. A small Transformer. The notebook reports accuracy, precision, recall, F1, ROC AUC, and confusion matrices, and saves simple charts and CSVs so you can review results and reuse the workflow. On held out tests, the ANN performed best on this feature set.
+This university project investigates whether connection-level IoT network traffic can be classified as benign or malicious. The cleaned workflow uses IoT-23 Zeek connection logs, prevents preprocessing leakage, and evaluates an artificial neural network against a logistic-regression baseline.
 
-## Data sources
+The original project also tested CNN, LSTM, and Transformer architectures. Those experiments remain in [`archive/`](archive/) with their saved outputs, but they are not treated as production-ready comparisons because the ten input fields are unordered tabular features rather than a meaningful temporal sequence.
 
-This project uses only Zeek logs from the IoT 23 dataset by Stratosphere Laboratory. You do not need PCAP files.
+## Portfolio version
 
-- Overview and docs: https://www.stratosphereips.org/datasets-iot23  
-- File index with per scenario folders and Zeek logs: https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/  
-- Citable snapshot on Zenodo: https://zenodo.org/record/4743746
+[`notebooks/iot23-malicious-traffic-detection.ipynb`](notebooks/iot23-malicious-traffic-detection.ipynb) is the canonical notebook. It:
 
-## What it does
+1. discovers multiple IoT-23 `conn.log.labeled.csv` files;
+2. removes direct identifiers and detailed labels that would leak the target;
+3. splits entire captures between training, validation, and testing;
+4. fits imputation, one-hot encoding, and scaling on the training set only;
+5. trains a class-weighted logistic-regression baseline and a dense neural network;
+6. reports balanced accuracy, precision, recall, F1, ROC AUC, PR AUC, and normalized confusion matrices.
 
-1. Loads Zeek logs from IoT 23 and selects features such as duration, proto, service, conn_state, bytes, packets, and ip_bytes.  
-2. Cleans data, removes direct identifiers, and samples a large dataset to fit Colab limits.  
-3. Encodes labels and applies standard scaling.  
-4. Splits the data into train, validation, and test sets with fixed seeds for reproducibility.  
-5. Trains and compares ANN, CNN, LSTM, and a small Transformer on a Colab T4 GPU with Adam and early stopping.  
-6. Evaluates each model with standard metrics and confusion matrices.  
-7. Saves metrics and plots for quick comparison and future runs.
+See [`RESULTS.md`](RESULTS.md) for the historical final-project results and their limitations.
 
-## How to use
+## Dataset
 
-- Open the notebook in Colab or locally and set the path to your IoT 23 Zeek logs.  
-- Run the cells top to bottom.  
-- Review metrics and confusion matrices to pick the model and operating point that fit your needs.
+The project uses the [IoT-23 dataset](https://www.stratosphereips.org/datasets-iot23) from Stratosphere Laboratory. The saved original run used Zeek connection logs named `CTU-IoT-Malware-Capture-*conn.log.labeled.csv`.
 
-## Earlier experiments
+Dataset files are not included. Obtain them from the [IoT-23 file index](https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/) or the [citable Zenodo snapshot](https://zenodo.org/records/4743746), review the dataset terms, and place the extracted connection-log CSV files under `data/iot23/`.
 
-[`earlier-experiments/`](earlier-experiments/) keeps the iterations that came before the main notebook, when the project was built on the **CICIoT2023** dataset in Google Colab. They train the same four model families (ANN, CNN with `Conv1D`, LSTM, and a small Transformer with `MultiHeadAttention`) using TensorFlow/Keras and scikit-learn preprocessing.
+```text
+data/iot23/
+  CTU-IoT-Malware-Capture-1-1conn.log.labeled.csv
+  CTU-IoT-Malware-Capture-3-1conn.log.labeled.csv
+  ...
+```
 
-| File | What it is |
-|---|---|
-| `SIngle_dataset_Proyecto.ipynb` | Models trained on a single CSV file from the dataset (20 epochs, 60% sample) |
-| `Proyecto Merged dataset.ipynb` | Models trained on several dataset CSVs merged together (10 epochs, 50% sample) |
-| `Proyectocimplete epoch 10.ipynb` | A near-identical saved run of the merged-dataset notebook |
-| `Proyecto_colab_version.ipynb`, `smalldeeplearnign.ipynb` | Shorter Colab versions with longer training (50 epochs) |
-| `network_traffic_classification.ipynb` / `.py` | A separate dense neural network classifier for IoT-23 traffic, with saved preprocessing (joblib). The `.py` file is the Colab export of the notebook. |
-| `merge_csv_datasets.py` | Merges every CSV file in a folder into one dataset file |
-| `ann_model.png`, `cnn_model.png`, `lstm_model.png`, `transformer_model.png` | Model architecture diagrams |
-| `confusion matrix.png`, `confusionarray.png`, `validation accuracy.png` | Result plots from these runs |
+The notebook accepts another location through the `IOT23_DATA_DIR` environment variable.
 
-The notebooks read data from a Google Drive folder, and the datasets aren't included. Download CICIoT2023 from the [Canadian Institute for Cybersecurity](https://www.unb.ca/cic/datasets/iotdataset-2023.html) and update `dataset_dir` before running.
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+jupyter lab
+```
+
+On Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+$env:IOT23_DATA_DIR = "D:\datasets\IoT-23"
+$env:MAX_ROWS_PER_CAPTURE = "200000"
+jupyter lab
+```
+
+`MAX_ROWS_PER_CAPTURE` controls the stratified sample taken from each capture. Set it to `0` to use every row when sufficient memory is available.
+
+## Repository layout
+
+```text
+notebooks/       Canonical reproducible analysis
+archive/         Original notebooks, figures, and exported code
+scripts/         Dataset preparation utilities
+data/            Dataset placement instructions; data is ignored by Git
+```
+
+## Important interpretation
+
+- A random row split can leak capture-specific patterns into every partition. The cleaned notebook keeps capture IDs disjoint.
+- Accuracy alone is misleading when malicious and benign flows are imbalanced, so the cleaned evaluation includes class-sensitive metrics.
+- The historical numbers document the university project. They were not independently reproduced during repository cleanup.
+- This repository analyzes saved network logs. It does not execute malware.
+
+## Author
+
+Jose E. Rodriguez Rios
