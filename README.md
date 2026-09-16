@@ -8,7 +8,7 @@ The original project also tested CNN, LSTM, and Transformer architectures. Those
 
 [`notebooks/iot23-malicious-traffic-detection.ipynb`](notebooks/iot23-malicious-traffic-detection.ipynb) is the canonical notebook. It:
 
-1. discovers multiple IoT-23 `conn.log.labeled.csv` files;
+1. discovers multiple IoT-23 connection logs, in either the format the dataset ships or a converted CSV export;
 2. removes direct identifiers and detailed labels that would leak the target;
 3. splits entire captures between training, validation, and testing;
 4. fits imputation, one-hot encoding, and scaling on the training set only;
@@ -19,16 +19,22 @@ See [`RESULTS.md`](RESULTS.md) for the historical final-project results and thei
 
 ## Dataset
 
-The project uses the [IoT-23 dataset](https://www.stratosphereips.org/datasets-iot23) from Stratosphere Laboratory. The saved original run used Zeek connection logs named `CTU-IoT-Malware-Capture-*conn.log.labeled.csv`.
+The project uses the [IoT-23 dataset](https://www.stratosphereips.org/datasets-iot23) from Stratosphere Laboratory. Dataset files are not included. Obtain them from the [IoT-23 file index](https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/) or the [citable Zenodo snapshot](https://zenodo.org/records/4743746), review the dataset terms, and place the connection logs under `data/iot23/`.
 
-Dataset files are not included. Obtain them from the [IoT-23 file index](https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/) or the [citable Zenodo snapshot](https://zenodo.org/records/4743746), review the dataset terms, and place the extracted connection-log CSV files under `data/iot23/`.
+Two layouts are accepted, and nested folders are searched:
 
 ```text
 data/iot23/
-  CTU-IoT-Malware-Capture-1-1conn.log.labeled.csv
-  CTU-IoT-Malware-Capture-3-1conn.log.labeled.csv
+  CTU-IoT-Malware-Capture-1-1conn.log.labeled       the Zeek logs the dataset ships
+  CTU-IoT-Malware-Capture-3-1conn.log.labeled.csv   a converted export of the same captures
   ...
 ```
+
+The logs Stratosphere publishes are tab separated, carry `#` header lines, and write
+`tunnel_parents`, `label` and `detailed-label` as one space-separated field rather than the three
+tab-separated fields their header declares. Converted exports are ordinary tables, usually pipe
+separated. [`scripts/iot23.py`](scripts/iot23.py) reads both and is what the notebook and the merge
+script use, so the same analysis works with either download.
 
 The notebook accepts another location through the `IOT23_DATA_DIR` environment variable.
 
@@ -57,8 +63,17 @@ jupyter lab
 ```text
 notebooks/       Canonical reproducible analysis
 archive/         Original notebooks, figures, and exported code
-scripts/         Dataset preparation utilities
+scripts/         Dataset reader and preparation utilities
+tests/           Offline checks for the dataset reader
 data/            Dataset placement instructions; data is ignored by Git
+```
+
+## Offline checks
+
+No dataset required: the checks build small captures in both formats and read them back.
+
+```bash
+python tests/test_iot23.py
 ```
 
 ## Important interpretation

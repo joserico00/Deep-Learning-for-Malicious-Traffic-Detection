@@ -2,7 +2,8 @@
 
 The canonical notebook reads capture files directly, so merging is not required.
 This utility exists for tools that need one table and avoids loading the full
-dataset into memory.
+dataset into memory. It reads the Zeek logs the dataset ships (`*conn.log.labeled`)
+and converted CSV exports (`*conn.log.labeled.csv`) alike.
 """
 
 from __future__ import annotations
@@ -12,6 +13,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from iot23 import capture_name, find_capture_files, read_connection_log
 
 
 NUMERIC_FEATURES = [
@@ -28,20 +31,15 @@ NUMERIC_FEATURES = [
 ]
 CATEGORICAL_FEATURES = ["proto", "service", "conn_state", "history"]
 OUTPUT_COLUMNS = NUMERIC_FEATURES + CATEGORICAL_FEATURES + ["label", "capture_id"]
-NA_VALUES = ["-", "(empty)", "?", "NA", "null"]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input_dir", type=Path, help="Directory containing IoT-23 connection-log CSV files")
+    parser.add_argument("input_dir", type=Path, help="Directory containing IoT-23 connection logs")
     parser.add_argument("output_csv", type=Path, help="Destination CSV file")
     parser.add_argument("--chunk-size", type=int, default=250_000, help="Rows processed at once")
     parser.add_argument("--overwrite", action="store_true", help="Replace an existing output file")
     return parser.parse_args()
-
-
-def capture_name(path: Path) -> str:
-    return path.name.split("conn.log")[0].rstrip("-_.")
 
 
 def select_columns(chunk: pd.DataFrame, path: Path) -> pd.DataFrame:
@@ -65,9 +63,9 @@ def main() -> None:
     args = parse_args()
     input_dir = args.input_dir.expanduser().resolve()
     output_csv = args.output_csv.expanduser().resolve()
-    paths = sorted(path for path in input_dir.rglob("*conn.log.labeled.csv") if path.resolve() != output_csv)
+    paths = [path for path in find_capture_files(input_dir) if path.resolve() != output_csv]
     if not paths:
-        raise SystemExit(f"No *conn.log.labeled.csv files found under {input_dir}")
+        raise SystemExit(f"No *conn.log.labeled or *conn.log.labeled.csv files found under {input_dir}")
     if output_csv.exists() and not args.overwrite:
         raise SystemExit(f"Output already exists: {output_csv}. Pass --overwrite to replace it.")
 
@@ -79,13 +77,7 @@ def main() -> None:
     write_header = True
     for path in paths:
         capture_rows = 0
-        for chunk in pd.read_csv(
-            path,
-            sep="|",
-            na_values=NA_VALUES,
-            low_memory=False,
-            chunksize=args.chunk_size,
-        ):
+        for chunk in read_connection_log(path, chunksize=args.chunk_size):
             selected = select_columns(chunk, path)
             selected.to_csv(output_csv, mode="a", header=write_header, index=False)
             write_header = False

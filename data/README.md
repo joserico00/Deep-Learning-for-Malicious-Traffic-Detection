@@ -1,10 +1,11 @@
 # Dataset Placement
 
-Place lawful copies of the IoT-23 Zeek connection-log CSV files in this directory. Dataset contents are ignored by Git.
+Place lawful copies of the IoT-23 Zeek connection logs in this directory. Dataset contents are ignored by Git.
 
-Expected filename pattern:
+Expected filename patterns, either the files the dataset ships or a converted export:
 
 ```text
+*conn.log.labeled
 *conn.log.labeled.csv
 ```
 
