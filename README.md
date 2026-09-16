@@ -86,3 +86,7 @@ python tests/test_iot23.py
 ## Author
 
 Jose E. Rodriguez Rios
+
+## License
+
+MIT — see [LICENSE](LICENSE).
